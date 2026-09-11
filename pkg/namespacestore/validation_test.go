@@ -86,6 +86,25 @@ func TestNamespaceStoreS3Compatible(t *testing.T) {
 
 }
 
+func TestNamespaceStoreSecretNamespace(t *testing.T) {
+	// Same namespace as the store is allowed
+	defaultNs := getDefaultS3CompatibleNsStore()
+	err := validations.ValidateNamespaceStore(&defaultNs)
+	AssertNotError(t, err, "Secret in the same namespace as the NamespaceStore should be allowed")
+
+	// Empty secret namespace is allowed (defaults to the store namespace)
+	defaultNs = getDefaultS3CompatibleNsStore()
+	defaultNs.Spec.S3Compatible.Secret.Namespace = ""
+	err = validations.ValidateNamespaceStore(&defaultNs)
+	AssertNotError(t, err, "Empty secret namespace should be allowed")
+
+	// Cross-namespace secretRef is denied
+	defaultNs = getDefaultS3CompatibleNsStore()
+	defaultNs.Spec.S3Compatible.Secret.Namespace = "openshift-machine-api"
+	err = validations.ValidateNamespaceStore(&defaultNs)
+	AssertError(t, err, "Cross-namespace secretRef should be denied")
+}
+
 func TestNamespaceStoreAzureBlob(t *testing.T) {
 	// Valid namespacestore with secret (Azure blob requires secret; no STS path for namespace store)
 	defaultNs := getDefaultAzureBlobNsStore()
@@ -308,7 +327,7 @@ func getDefaultIBMCosNsStore() nbv1.NamespaceStore {
 				TargetBucket: "some-target-bucket",
 			},
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: "test1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "test1", Namespace: "namespace"},
 	}
 }
 
@@ -326,7 +345,7 @@ func getDefaultS3CompatibleNsStore() nbv1.NamespaceStore {
 				TargetBucket: "some-target-bucket",
 			},
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: "test1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "test1", Namespace: "namespace"},
 	}
 }
 
@@ -339,7 +358,7 @@ func getDefaultNSFSNsStore() nbv1.NamespaceStore {
 				SubPath: "subpath/",
 			},
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: "test1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "test1", Namespace: "namespace"},
 	}
 }
 
@@ -355,7 +374,7 @@ func getDefaultAzureBlobNsStore() nbv1.NamespaceStore {
 				},
 			},
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: "test-azure"},
+		ObjectMeta: metav1.ObjectMeta{Name: "test-azure", Namespace: "namespace"},
 	}
 }
 
@@ -371,6 +390,6 @@ func getDefaultGoogleCloudStorageNsStore() nbv1.NamespaceStore {
 				},
 			},
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: "test-gcp"},
+		ObjectMeta: metav1.ObjectMeta{Name: "test-gcp", Namespace: "namespace"},
 	}
 }

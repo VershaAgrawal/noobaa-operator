@@ -25,6 +25,7 @@ Note that the commands will apply to the namespace that's currently active (can 
 Also note that, if possible and applicable, omitting the `access-key` and `secret-key` flags is recommended in order to avoid leakage of secrets. When both flags are ommitted, the CLI will prompt the user to enter the keys interactively.
 
 If you choose to use the CLI's `--secret-name` option, or to apply a YAML, please see [Store Secret Creation](store-connection-secrets.md).
+In case of YAML application, `secret.namespace` must match the NamespaceStore's namespace, or be omitted (it then defaults to the NamespaceStore namespace). Cross-namespace secret references are rejected.
 
 ## AWS S3
 Uses the S3 API for IO operations on plain data in AWS buckets

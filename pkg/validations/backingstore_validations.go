@@ -29,6 +29,9 @@ func ValidateBackingStore(bs nbv1.BackingStore) error {
 	if err := ValidateBSEmptySecretName(bs); err != nil {
 		return err
 	}
+	if err := ValidateBSSecretNamespace(bs); err != nil {
+		return err
+	}
 	if err := ValidateBSEmptyTargetBucket(bs); err != nil {
 		return err
 	}
@@ -140,6 +143,27 @@ func ValidateBSInValidSpec(bs nbv1.BackingStore) error {
 		}
 	}
 	return nil
+}
+
+// ValidateSecretNamespace denies a secretRef that points at a different namespace
+// than the store CR. An empty secret namespace is allowed (it defaults to the CR namespace).
+func ValidateSecretNamespace(secretNamespace, crNamespace string) error {
+	if secretNamespace != "" && secretNamespace != crNamespace {
+		return util.ValidationError{
+			Msg: fmt.Sprintf("secret namespace %q must match the store namespace %q, or be omitted", secretNamespace, crNamespace),
+		}
+	}
+	return nil
+}
+
+// ValidateBSSecretNamespace validates that a BackingStore secretRef, when named,
+// is in the same namespace as the BackingStore (or has an empty namespace).
+func ValidateBSSecretNamespace(bs nbv1.BackingStore) error {
+	secretRef, err := util.GetBackingStoreSecretByType(&bs)
+	if err != nil || secretRef == nil || secretRef.Name == "" {
+		return nil
+	}
+	return ValidateSecretNamespace(secretRef.Namespace, bs.Namespace)
 }
 
 // ValidateBSEmptySecretName validates a secret name is provided for cloud backingstores

@@ -30,7 +30,7 @@ Note that the commands will apply to the namespace that's currently active (can 
 Also note that, if possible and applicable, omitting the `access-key` and `secret-key` flags is recommended in order to avoid leakage of secrets. When both flags are ommitted, the CLI will prompt the user to enter the keys interactively.
 
 If the user opts to use the CLI's `--secret-name` option, or to apply a YAML, please see [Store Secret Creation](store-connection-secrets.md).
-In case of YAML application, the value under `secret.namespace` needs to point to the secret's namespace.
+In case of YAML application, `secret.namespace` must match the BackingStore's namespace, or be omitted (it then defaults to the BackingStore namespace). Cross-namespace secret references are rejected.
 
 # Cloud Storage Permissions
 To successfully initialize a BackingStore, the provided cloud credentials must have sufficient permissions to manage the target bucket and list all buckets within the account. This listing is required for NooBaa’s external connection validation.

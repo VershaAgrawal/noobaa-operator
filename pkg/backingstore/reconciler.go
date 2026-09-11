@@ -269,6 +269,12 @@ func (r *Reconciler) LoadBackingStoreSecret() error {
 		return err
 	}
 
+	if secretRef != nil && secretRef.Name != "" {
+		if err := validations.ValidateSecretNamespace(secretRef.Namespace, r.BackingStore.Namespace); err != nil {
+			return util.NewPersistentError("InvalidSecretNamespace", err.Error())
+		}
+	}
+
 	if secretRef != nil {
 		r.Secret.Name = secretRef.Name
 		r.Secret.Namespace = secretRef.Namespace

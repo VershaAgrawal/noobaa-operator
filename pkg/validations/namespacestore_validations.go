@@ -28,6 +28,9 @@ func ValidateNamespaceStore(nsStore *nbv1.NamespaceStore) error {
 	if err := ValidateNSEmptySecretName(*nsStore); err != nil {
 		return err
 	}
+	if err := ValidateNSSecretNamespace(nsStore); err != nil {
+		return err
+	}
 	if err := ValidateNSEmptyTargetBucket(*nsStore); err != nil {
 		return err
 	}
@@ -292,6 +295,16 @@ func EndpointsEquivalent(endpointA, endpointB string) (bool, error) {
 		return false, err
 	}
 	return a == b, nil
+}
+
+// ValidateNSSecretNamespace validates that a NamespaceStore secretRef, when named,
+// is in the same namespace as the NamespaceStore (or has an empty namespace).
+func ValidateNSSecretNamespace(nsStore *nbv1.NamespaceStore) error {
+	secretRef, err := util.GetNamespaceStoreSecretByType(nsStore)
+	if err != nil || secretRef == nil || secretRef.Name == "" {
+		return nil
+	}
+	return ValidateSecretNamespace(secretRef.Namespace, nsStore.Namespace)
 }
 
 // ValidateNSEmptySecretName validates a secret name is provided for cloud namespacestore

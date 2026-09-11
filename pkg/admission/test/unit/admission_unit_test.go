@@ -89,6 +89,52 @@ var _ = Describe("BackingStore admission unit tests", func() {
 					Ω(err).ShouldNot(HaveOccurred())
 				})
 			})
+			Context("Secret namespace", func() {
+				It("Should Allow when secret namespace matches the BackingStore namespace", func() {
+					bs.Spec = nbv1.BackingStoreSpec{
+						Type: nbv1.StoreTypeAWSS3,
+						AWSS3: &nbv1.AWSS3Spec{
+							TargetBucket: "some-target-bucket",
+							Secret: corev1.SecretReference{
+								Name:      "secret-name",
+								Namespace: "test",
+							},
+						},
+					}
+					err = validations.ValidateBackingStore(*bs)
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+				It("Should Allow when secret namespace is empty", func() {
+					bs.Spec = nbv1.BackingStoreSpec{
+						Type: nbv1.StoreTypeAWSS3,
+						AWSS3: &nbv1.AWSS3Spec{
+							TargetBucket: "some-target-bucket",
+							Secret: corev1.SecretReference{
+								Name:      "secret-name",
+								Namespace: "",
+							},
+						},
+					}
+					err = validations.ValidateBackingStore(*bs)
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+				It("Should Deny when secret namespace differs from the BackingStore namespace", func() {
+					bs.Spec = nbv1.BackingStoreSpec{
+						Type: nbv1.StoreTypeS3Compatible,
+						S3Compatible: &nbv1.S3CompatibleSpec{
+							TargetBucket: "some-target-bucket",
+							Endpoint:     "https://s3.example.com",
+							Secret: corev1.SecretReference{
+								Name:      "secret-name",
+								Namespace: "openshift-machine-api",
+							},
+						},
+					}
+					err = validations.ValidateBackingStore(*bs)
+					Ω(err).Should(HaveOccurred())
+					Expect(err.Error()).To(Equal("secret namespace \"openshift-machine-api\" must match the store namespace \"test\", or be omitted"))
+				})
+			})
 			Context("Empty Target Bucket", func() {
 				It("Should Deny", func() {
 					bs.Spec = nbv1.BackingStoreSpec{
@@ -193,8 +239,8 @@ var _ = Describe("BackingStore admission unit tests", func() {
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "my-container",
-							Secret:             corev1.SecretReference{Name: "", Namespace: "test"},
-							ClientId:           &clientID,
+							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
+							ClientId:            &clientID,
 						},
 					}
 					err = validations.ValidateBSEmptySecretName(*bs)
@@ -207,9 +253,9 @@ var _ = Describe("BackingStore admission unit tests", func() {
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "my-container",
-							Secret:             corev1.SecretReference{Name: "", Namespace: "test"},
-							ClientId:           &clientID,
-							TenantId:           &tenantID,
+							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
+							ClientId:            &clientID,
+							TenantId:            &tenantID,
 						},
 					}
 					err = validations.ValidateBSEmptySecretName(*bs)
@@ -298,8 +344,8 @@ var _ = Describe("BackingStore admission unit tests", func() {
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "my-container",
-							Secret:             corev1.SecretReference{Name: "", Namespace: "test"},
-							ClientId:           &clientID,
+							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
+							ClientId:            &clientID,
 						},
 					}
 					err = validations.ValidateBackingStore(*bs)
@@ -312,9 +358,9 @@ var _ = Describe("BackingStore admission unit tests", func() {
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "my-container",
-							Secret:             corev1.SecretReference{Name: "", Namespace: "test"},
-							ClientId:           &clientID,
-							TenantId:           &tenantID,
+							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
+							ClientId:            &clientID,
+							TenantId:            &tenantID,
 						},
 					}
 					err = validations.ValidateBackingStore(*bs)
@@ -332,8 +378,8 @@ var _ = Describe("BackingStore admission unit tests", func() {
 							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
 							ClientId:            &clientID,
 							TenantId:            &tenantID,
-							SubscriptionId:     &subscriptionID,
-							ResourcegroupId:    &resourceGroupID,
+							SubscriptionId:      &subscriptionID,
+							ResourcegroupId:     &resourceGroupID,
 						},
 					}
 					err = validations.ValidateBackingStore(*bs)
@@ -591,14 +637,14 @@ var _ = Describe("BackingStore admission unit tests", func() {
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "original-container",
-							Secret: corev1.SecretReference{Name: "azure-secret", Namespace: "test"},
+							Secret:              corev1.SecretReference{Name: "azure-secret", Namespace: "test"},
 						},
 					}
 					updatedBS.Spec = nbv1.BackingStoreSpec{
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "different-container",
-							Secret: corev1.SecretReference{Name: "azure-secret", Namespace: "test"},
+							Secret:              corev1.SecretReference{Name: "azure-secret", Namespace: "test"},
 						},
 					}
 					err = validations.ValidateTargetBSBucketChange(*bs, *updatedBS)
@@ -612,18 +658,18 @@ var _ = Describe("BackingStore admission unit tests", func() {
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "same-container",
-							Secret:             corev1.SecretReference{Name: "", Namespace: "test"},
-							ClientId:           &clientID,
-							TenantId:           &tenantID,
+							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
+							ClientId:            &clientID,
+							TenantId:            &tenantID,
 						},
 					}
 					updatedBS.Spec = nbv1.BackingStoreSpec{
 						Type: nbv1.StoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "same-container",
-							Secret:             corev1.SecretReference{Name: "", Namespace: "test"},
-							ClientId:           &clientID,
-							TenantId:           &tenantID,
+							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
+							ClientId:            &clientID,
+							TenantId:            &tenantID,
 						},
 					}
 					err = validations.ValidateTargetBSBucketChange(*bs, *updatedBS)
@@ -705,6 +751,52 @@ var _ = Describe("NamespaceStore admission unit tests", func() {
 					Ω(err).ShouldNot(HaveOccurred())
 				})
 			})
+			Context("Secret namespace", func() {
+				It("Should Allow when secret namespace matches the NamespaceStore namespace", func() {
+					ns.Spec = nbv1.NamespaceStoreSpec{
+						Type: nbv1.NSStoreTypeAWSS3,
+						AWSS3: &nbv1.AWSS3Spec{
+							TargetBucket: "some-target-bucket",
+							Secret: corev1.SecretReference{
+								Name:      "secret-name",
+								Namespace: "test",
+							},
+						},
+					}
+					err = validations.ValidateNamespaceStore(ns)
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+				It("Should Allow when secret namespace is empty", func() {
+					ns.Spec = nbv1.NamespaceStoreSpec{
+						Type: nbv1.NSStoreTypeAWSS3,
+						AWSS3: &nbv1.AWSS3Spec{
+							TargetBucket: "some-target-bucket",
+							Secret: corev1.SecretReference{
+								Name:      "secret-name",
+								Namespace: "",
+							},
+						},
+					}
+					err = validations.ValidateNamespaceStore(ns)
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+				It("Should Deny when secret namespace differs from the NamespaceStore namespace", func() {
+					ns.Spec = nbv1.NamespaceStoreSpec{
+						Type: nbv1.NSStoreTypeS3Compatible,
+						S3Compatible: &nbv1.S3CompatibleSpec{
+							TargetBucket: "some-target-bucket",
+							Endpoint:     "https://s3.example.com",
+							Secret: corev1.SecretReference{
+								Name:      "secret-name",
+								Namespace: "openshift-machine-api",
+							},
+						},
+					}
+					err = validations.ValidateNamespaceStore(ns)
+					Ω(err).Should(HaveOccurred())
+					Expect(err.Error()).To(Equal("secret namespace \"openshift-machine-api\" must match the store namespace \"test\", or be omitted"))
+				})
+			})
 			Context("Empty Target Bucket", func() {
 				It("Should Deny", func() {
 					ns.Spec = nbv1.NamespaceStoreSpec{
@@ -742,7 +834,7 @@ var _ = Describe("NamespaceStore admission unit tests", func() {
 						Type: nbv1.NSStoreTypeAzureBlob,
 						AzureBlob: &nbv1.AzureBlobSpec{
 							TargetBlobContainer: "my-container",
-							Secret:             corev1.SecretReference{Name: "", Namespace: "test"},
+							Secret:              corev1.SecretReference{Name: "", Namespace: "test"},
 						},
 					}
 					err = validations.ValidateNSEmptySecretName(*ns)
